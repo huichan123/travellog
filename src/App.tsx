@@ -94,12 +94,10 @@ function AppRoutes() {
 // ─── 루트 앱 컴포넌트 ───────────────────────────────────────────────────────────
 
 export default function App() {
+  const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
   return (
-    // BrowserRouter: URL 기반 라우팅
-    <BrowserRouter>
-      {/* AuthProvider: 앱 전체에 로그인 상태 공유 */}
+    <BrowserRouter basename={basename}>
       <AuthProvider>
-        {/* TripProvider: 앱 전체에 여행 상태 공유 */}
         <TripProvider>
           <AppRoutes />
         </TripProvider>
