@@ -65,6 +65,7 @@ export default function MapView({
 
         // Google Maps 인스턴스 생성
         const map = new google.maps.Map(mapRef.current, {
+          mapId: 'DEMO_MAP_ID',
           center,
           zoom: 14,
           mapTypeControl: false,        // 지도 유형 버튼 숨기기

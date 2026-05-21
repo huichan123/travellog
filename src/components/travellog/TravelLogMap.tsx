@@ -66,6 +66,7 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
         if (!mapRef.current) return;
 
         const map = new google.maps.Map(mapRef.current, {
+          mapId: 'DEMO_MAP_ID',
           center: { lat: 37.5665, lng: 126.9780 },
           zoom: 13,
           mapTypeControl: false,
