@@ -3,15 +3,19 @@
   <head>
     <meta charset="utf-8">
     <title>TravelLog</title>
-    <!-- GitHub Pages SPA 라우팅 우회 스크립트 -->
-    <!-- /trips/abc 같은 경로로 직접 접근하거나 새로고침해도 앱이 정상 동작하게 합니다 -->
     <script>
+      // GitHub Pages는 SPA 라우팅을 모르기 때문에
+      // /travel-logs/new 같은 경로를 새로고침하면 404를 반환합니다.
+      // 이 스크립트는 해당 경로를 쿼리스트링으로 인코딩해서
+      // index.html로 리디렉션합니다.
+      // index.html의 복원 스크립트가 ?/ 형식을 기대하므로 그 형식으로 전달합니다.
       var l = window.location;
       l.replace(
         l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
         l.pathname.split('/').slice(0, 2).join('/') +
-        '/?p=/' + l.pathname.slice(1).split('/').slice(1).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        '/?/' +
+        l.pathname.slice(1).split('/').slice(1).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
         l.hash
       );
     </script>
