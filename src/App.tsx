@@ -3,7 +3,7 @@
 // 라우팅과 전체 레이아웃을 담당합니다
 // ========================================
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TripProvider } from './contexts/TripContext';
 import Navbar from './components/ui/Navbar';
@@ -94,14 +94,13 @@ function AppRoutes() {
 // ─── 루트 앱 컴포넌트 ───────────────────────────────────────────────────────────
 
 export default function App() {
-  const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
   return (
-    <BrowserRouter basename={basename}>
+    <HashRouter>
       <AuthProvider>
         <TripProvider>
           <AppRoutes />
         </TripProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
