@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import TravelLogMap from '../components/travellog/TravelLogMap';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { formatDate, formatDateTime } from '../utils/formatters';
+import { buildRouteFromPhotos } from '../utils/routeUtils';
 
 export default function TravelLogDetailPage() {
   const { logId } = useParams<{ logId: string }>();
@@ -71,6 +72,8 @@ export default function TravelLogDetailPage() {
   }
 
   const locationCount = log.photos.filter(p => p.hasLocation).length;
+  // 저장된 route 대신 photos에서 재계산 → 필터링으로 누락된 포인트 복원
+  const route = buildRouteFromPhotos(log.photos);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,7 +112,7 @@ export default function TravelLogDetailPage() {
           <h2 className="font-semibold text-gray-800 mb-3">이동 경로</h2>
           <TravelLogMap
             photos={log.photos}
-            route={log.route}
+            route={route}
             height="400px"
           />
         </div>
@@ -125,7 +128,7 @@ export default function TravelLogDetailPage() {
             <p className="text-xs text-gray-400 mt-0.5">GPS 사진</p>
           </div>
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <p className="text-2xl font-bold text-gray-700">{log.route.length}</p>
+            <p className="text-2xl font-bold text-gray-700">{route.length}</p>
             <p className="text-xs text-gray-400 mt-0.5">경로 포인트</p>
           </div>
         </div>
