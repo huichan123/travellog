@@ -51,11 +51,12 @@ export default function MapView({
           googleMapsLoader = new Loader({
             apiKey,
             version: 'weekly',
-            libraries: ['places'],
           });
         }
 
-        await googleMapsLoader.load();
+        // v1.16+ 에서는 importLibrary()를 사용해야 클래스가 로드됨
+        await googleMapsLoader.importLibrary('maps');
+        await googleMapsLoader.importLibrary('marker');
 
         if (!mapRef.current) return;
 
@@ -84,7 +85,8 @@ export default function MapView({
 
         mapInstanceRef.current = map;
         setMapLoaded(true);
-      } catch {
+      } catch (err) {
+        console.error('Google Maps 로드 실패:', err);
         setMapError('지도를 불러오는 중 오류가 발생했습니다.');
       }
     };
@@ -202,7 +204,7 @@ export default function MapView({
 
   if (mapError) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-xl">
+      <div className="flex-1 w-full flex items-center justify-center bg-gray-50 rounded-xl" style={{ minHeight: 300 }}>
         <div className="text-center p-6">
           <div className="text-4xl mb-3">🗺️</div>
           <p className="text-gray-600 font-medium mb-1">지도를 불러올 수 없습니다</p>
@@ -215,7 +217,7 @@ export default function MapView({
   return (
     <>
       {/* 지도 컨테이너 */}
-      <div ref={mapRef} className="w-full h-full rounded-xl" />
+      <div ref={mapRef} className="flex-1 w-full rounded-xl" style={{ minHeight: 300 }} />
 
       {/* 사진 상세 팝업 */}
       {selectedPhoto && (

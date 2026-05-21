@@ -79,7 +79,7 @@ export default function MapPage() {
       )}
 
       {/* 지도 영역 (메인) */}
-      <div className="flex-1 relative p-3 pb-0">
+      <div className="flex-1 relative p-3 pb-0 min-h-0 flex flex-col">
         <MapView
           photos={photos}
           locations={locations}
