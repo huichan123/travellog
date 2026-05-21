@@ -9,6 +9,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { doc, collection } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { TravelPhoto } from '../types';
 import { extractTravelPhotoMetadata } from '../utils/exifReader';
 import {
@@ -38,8 +40,10 @@ export default function CreateTravelLogPage() {
   const [selectionMode, setSelectionMode] = useState<SelectionMode>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState('');
   const [rangeError, setRangeError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileMapRef = useRef<Map<string, File>>(new Map());
 
   // 범위 안에 있는 사진들 (지도/저장에 사용)
   const rangePhotos = startPhotoId && endPhotoId
@@ -58,9 +62,11 @@ export default function CreateTravelLogPage() {
     setUploading(true);
     try {
       const newPhotos = await Promise.all(
-        files.map((file, i) =>
-          extractTravelPhotoMetadata(file, `photo_${Date.now()}_${i}`)
-        )
+        files.map(async (file, i) => {
+          const id = `photo_${Date.now()}_${i}`;
+          fileMapRef.current.set(id, file);
+          return extractTravelPhotoMetadata(file, id);
+        })
       );
       setPhotos(prev => sortPhotosByTime([...prev, ...newPhotos]));
     } finally {
@@ -109,32 +115,38 @@ export default function CreateTravelLogPage() {
 
     setSaving(true);
     try {
-      // 현재는 Object URL 그대로 저장 (추후 Storage 업로드 확장 가능)
-      // File 객체를 따로 보관해야 하므로 extractTravelPhotoMetadata를 수정하면
-      // fileMap을 채워서 uploadTravelPhoto로 Storage에 올릴 수 있음
-      const fileMap = new Map<string, File>();
-      const finalPhotos = rangePhotos;
+      // Firestore 문서 ID를 미리 생성해서 Storage 경로에 사용
+      const logRef = doc(collection(db, 'travelLogs'));
+      const logId = logRef.id;
 
-      const logId = await saveTravelLog(currentUser.uid, {
+      // 사진을 Firebase Storage에 업로드하고 Storage URL로 교체
+      setSaveProgress(`사진 업로드 중... (0 / ${rangePhotos.length})`);
+      let uploaded = 0;
+      const uploadedPhotos = await Promise.all(
+        rangePhotos.map(async (photo) => {
+          const file = fileMapRef.current.get(photo.id);
+          if (file) {
+            const storageUrl = await uploadTravelPhoto(currentUser.uid, logId, photo.id, file);
+            uploaded++;
+            setSaveProgress(`사진 업로드 중... (${uploaded} / ${rangePhotos.length})`);
+            return { ...photo, imageUrl: storageUrl };
+          }
+          return photo;
+        })
+      );
+
+      setSaveProgress('여행 로그 저장 중...');
+      await saveTravelLog(currentUser.uid, {
         userId: currentUser.uid,
         title: title.trim(),
         startPhotoId: startPhotoId ?? rangePhotos[0].id,
         endPhotoId: endPhotoId ?? rangePhotos[rangePhotos.length - 1].id,
-        photos: finalPhotos,
+        photos: uploadedPhotos,
         route: routePoints,
-        coverImageUrl: finalPhotos[0]?.imageUrl,
-        photoCount: finalPhotos.length,
+        coverImageUrl: uploadedPhotos[0]?.imageUrl,
+        photoCount: uploadedPhotos.length,
         locationCount,
-      });
-
-      // fileMap이 있으면 Storage 업로드 (추후 확장용 구조)
-      if (fileMap.size > 0) {
-        await Promise.all(
-          Array.from(fileMap.entries()).map(([photoId, file]) =>
-            uploadTravelPhoto(currentUser.uid, logId, photoId, file)
-          )
-        );
-      }
+      }, logId);
 
       navigate(`/travel-logs/${logId}`);
     } catch (err) {
@@ -142,6 +154,7 @@ export default function CreateTravelLogPage() {
       alert('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setSaving(false);
+      setSaveProgress('');
     }
   };
 
@@ -168,7 +181,7 @@ export default function CreateTravelLogPage() {
             disabled={!canSave}
             className="btn-primary text-sm"
           >
-            {saving ? '저장 중...' : '여행 로그 저장'}
+            {saving ? (saveProgress || '저장 중...') : '여행 로그 저장'}
           </button>
         </div>
       </div>
@@ -340,7 +353,7 @@ export default function CreateTravelLogPage() {
               {saving ? (
                 <span className="flex items-center gap-2">
                   <LoadingSpinner size="sm" />
-                  저장 중...
+                  {saveProgress || '저장 중...'}
                 </span>
               ) : '여행 로그 저장'}
             </button>

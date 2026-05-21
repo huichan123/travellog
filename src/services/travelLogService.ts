@@ -8,6 +8,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   getDocs,
   getDoc,
   deleteDoc,
@@ -53,7 +54,8 @@ export async function uploadTravelPhoto(
  */
 export async function saveTravelLog(
   userId: string,
-  log: Omit<TravelLog, 'id' | 'createdAt'>
+  log: Omit<TravelLog, 'id' | 'createdAt'>,
+  customId?: string
 ): Promise<string> {
   const data = {
     ...log,
@@ -63,6 +65,10 @@ export async function saveTravelLog(
     route: log.route.map(serializeRoutePoint),
   };
 
+  if (customId) {
+    await setDoc(doc(db, 'travelLogs', customId), data);
+    return customId;
+  }
   const docRef = await addDoc(collection(db, 'travelLogs'), data);
   return docRef.id;
 }
