@@ -13,7 +13,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
@@ -71,13 +70,10 @@ export async function saveTravelLog(
 // ─── 여행 로그 조회 ────────────────────────────────────────────────────────────
 
 export async function getUserTravelLogs(userId: string): Promise<TravelLog[]> {
-  const q = query(
-    collection(db, 'travelLogs'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
+  const q = query(collection(db, 'travelLogs'), where('userId', '==', userId));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => deserializeTravelLog(d.id, d.data()));
+  const logs = snapshot.docs.map(d => deserializeTravelLog(d.id, d.data()));
+  return logs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function getTravelLog(logId: string): Promise<TravelLog | null> {

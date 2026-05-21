@@ -12,7 +12,6 @@ import {
   getDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
@@ -91,20 +90,22 @@ export async function saveLocation(
  * 사용자의 모든 여행 기록을 가져옵니다 (최신순)
  */
 export async function getUserTrips(userId: string): Promise<Trip[]> {
+  // orderBy를 제거해 복합 인덱스 없이도 동작하게 하고, 클라이언트에서 정렬
   const q = query(
     collection(db, 'trips'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('userId', '==', userId)
   );
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({
+  const trips = snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
     startTime: toDate(doc.data().startTime),
     endTime: doc.data().endTime ? toDate(doc.data().endTime) : undefined,
     createdAt: toDate(doc.data().createdAt),
   } as Trip));
+
+  return trips.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 /**
@@ -128,17 +129,13 @@ export async function getTrip(tripId: string): Promise<Trip | null> {
  * 특정 여행의 이동 경로 기록을 가져옵니다
  */
 export async function getTripLocations(tripId: string): Promise<LocationRecord[]> {
-  const q = query(
-    collection(db, 'trips', tripId, 'locations'),
-    orderBy('timestamp', 'asc')
-  );
-
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({
+  const snapshot = await getDocs(collection(db, 'trips', tripId, 'locations'));
+  const locations = snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
     timestamp: toDate((doc.data().timestamp as Timestamp)),
   } as LocationRecord));
+  return locations.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 }
 
 /**

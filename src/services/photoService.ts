@@ -8,8 +8,6 @@ import {
   collection,
   addDoc,
   getDocs,
-  query,
-  orderBy,
   serverTimestamp,
   updateDoc,
   doc,
@@ -112,17 +110,13 @@ export async function uploadPhoto(
  * 특정 여행의 모든 사진을 시간순으로 가져옵니다
  */
 export async function getTripPhotos(tripId: string): Promise<Photo[]> {
-  const q = query(
-    collection(db, 'trips', tripId, 'photos'),
-    orderBy('timestamp', 'asc') // 시간순 정렬
-  );
-
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({
+  const snapshot = await getDocs(collection(db, 'trips', tripId, 'photos'));
+  const photos = snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
     timestamp: toDate(doc.data().timestamp as Timestamp),
   } as Photo));
+  return photos.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 }
 
 // ─── 대표 사진 설정 ────────────────────────────────────────────────────────────

@@ -33,6 +33,7 @@ export default function MapPage() {
   const [startLoading, setStartLoading] = useState(false);
   const [stopLoading, setStopLoading] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [stopError, setStopError] = useState('');
 
   // 여행 시작 처리
   const handleStartTrip = async () => {
@@ -52,11 +53,13 @@ export default function MapPage() {
   // 여행 종료 처리
   const handleStopTrip = async () => {
     setStopLoading(true);
+    setStopError('');
     try {
       await stopTrip();
       setShowEndConfirm(false);
     } catch (error) {
       console.error('여행 종료 실패:', error);
+      setStopError('저장에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.');
     } finally {
       setStopLoading(false);
     }
@@ -213,7 +216,7 @@ export default function MapPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm p-6 animate-fade-in">
             <h3 className="text-lg font-bold text-gray-800 mb-2">여행을 종료할까요?</h3>
-            <p className="text-gray-500 text-sm mb-6">
+            <p className="text-gray-500 text-sm mb-4">
               지금까지 기록된 경로와 사진이 저장됩니다.
               {activeTrip && (
                 <span className="block mt-1 text-gray-700 font-medium">
@@ -221,10 +224,16 @@ export default function MapPage() {
                 </span>
               )}
             </p>
+            {stopError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                {stopError}
+              </div>
+            )}
             <div className="flex gap-3">
               <button
-                onClick={() => setShowEndConfirm(false)}
+                onClick={() => { setShowEndConfirm(false); setStopError(''); }}
                 className="btn-secondary flex-1"
+                disabled={stopLoading}
               >
                 계속하기
               </button>

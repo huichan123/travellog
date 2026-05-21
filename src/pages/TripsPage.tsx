@@ -20,7 +20,7 @@ export default function TripsPage() {
   const [travelLogs, setTravelLogs] = useState<TravelLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'realtime' | 'photo'>('photo');
+  const [activeTab, setActiveTab] = useState<'realtime' | 'photo'>('realtime');
 
   useEffect(() => {
     const fetchData = async () => {
