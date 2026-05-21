@@ -5,7 +5,7 @@
 // ========================================
 
 import exifr from 'exifr';
-import { Coordinates } from '../types';
+import { Coordinates, TravelPhoto } from '../types';
 
 /**
  * 이미지 파일에서 GPS 좌표를 추출합니다
@@ -47,4 +47,52 @@ export async function extractDateFromImage(file: File): Promise<Date> {
     // EXIF 없음 - 현재 시간 사용
   }
   return new Date();
+}
+
+/**
+ * 이미지 파일에서 모든 여행 로그용 메타데이터를 한 번에 추출합니다.
+ * takenAt: EXIF에 날짜 없으면 null
+ * latitude/longitude: GPS 없으면 null
+ */
+export async function extractTravelPhotoMetadata(
+  file: File,
+  id: string
+): Promise<TravelPhoto> {
+  const imageUrl = URL.createObjectURL(file);
+  let takenAt: Date | null = null;
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+
+  try {
+    // GPS + 날짜를 한 번의 파싱으로 추출
+    const data = await exifr.parse(file, {
+      pick: ['DateTimeOriginal', 'DateTime', 'GPSLatitude', 'GPSLongitude',
+             'GPSLatitudeRef', 'GPSLongitudeRef'],
+      translateValues: true,
+    });
+
+    if (data) {
+      if (data.DateTimeOriginal) takenAt = new Date(data.DateTimeOriginal);
+      else if (data.DateTime) takenAt = new Date(data.DateTime);
+    }
+
+    // GPS 좌표는 exifr.gps()가 가장 정확하게 처리함 (부호 변환 포함)
+    const gps = await exifr.gps(file);
+    if (gps?.latitude != null && gps?.longitude != null) {
+      latitude = gps.latitude;
+      longitude = gps.longitude;
+    }
+  } catch {
+    // EXIF 파싱 실패 - 기본값 유지
+  }
+
+  return {
+    id,
+    fileName: file.name,
+    imageUrl,
+    takenAt,
+    latitude,
+    longitude,
+    hasLocation: latitude !== null && longitude !== null,
+  };
 }

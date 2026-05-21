@@ -90,3 +90,39 @@ export interface PhotoUploadData {
   memo: string;
   coordinates?: Coordinates;  // EXIF에서 추출된 좌표 (있을 경우)
 }
+
+// ─── 여행 로그 (EXIF 기반) 타입 ───────────────────────────────────────────────
+
+// EXIF에서 추출한 사진 메타데이터
+export interface TravelPhoto {
+  id: string;
+  fileName: string;
+  imageUrl: string;           // Object URL (로컬 미리보기) 또는 Storage URL
+  takenAt: Date | null;       // 촬영 시간 (EXIF 없으면 null)
+  latitude: number | null;    // GPS 위도 (없으면 null)
+  longitude: number | null;   // GPS 경도 (없으면 null)
+  hasLocation: boolean;
+}
+
+// 경로를 구성하는 각 점
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+  photoId: string;
+  takenAt: Date;
+}
+
+// 저장된 여행 로그
+export interface TravelLog {
+  id?: string;
+  userId: string;
+  title: string;
+  createdAt: Date;
+  startPhotoId: string;
+  endPhotoId: string;
+  photos: TravelPhoto[];
+  route: RoutePoint[];
+  coverImageUrl?: string;
+  photoCount: number;
+  locationCount: number;
+}

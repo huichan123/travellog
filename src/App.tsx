@@ -13,6 +13,8 @@ import DashboardPage from './pages/DashboardPage';
 import MapPage from './pages/MapPage';
 import TripsPage from './pages/TripsPage';
 import TripDetailPage from './pages/TripDetailPage';
+import CreateTravelLogPage from './pages/CreateTravelLogPage';
+import TravelLogDetailPage from './pages/TravelLogDetailPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // ─── 보호된 라우트 컴포넌트 ──────────────────────────────────────────────────────
@@ -74,6 +76,12 @@ function AppRoutes() {
         } />
         <Route path="/trips/:tripId" element={
           <ProtectedRoute><TripDetailPage /></ProtectedRoute>
+        } />
+        <Route path="/travel-logs/new" element={
+          <ProtectedRoute><CreateTravelLogPage /></ProtectedRoute>
+        } />
+        <Route path="/travel-logs/:logId" element={
+          <ProtectedRoute><TravelLogDetailPage /></ProtectedRoute>
         } />
 
         {/* 없는 페이지는 홈으로 */}
