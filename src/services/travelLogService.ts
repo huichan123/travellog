@@ -9,6 +9,7 @@ import {
   doc,
   addDoc,
   setDoc,
+  updateDoc,
   getDocs,
   getDoc,
   deleteDoc,
@@ -89,6 +90,10 @@ export async function getTravelLog(logId: string): Promise<TravelLog | null> {
 }
 
 // ─── 여행 로그 삭제 ────────────────────────────────────────────────────────────
+
+export async function updateTravelLogTitle(logId: string, title: string): Promise<void> {
+  await updateDoc(doc(db, 'travelLogs', logId), { title });
+}
 
 export async function deleteTravelLog(
   userId: string,

@@ -8,6 +8,7 @@ import {
   doc,
   addDoc,
   updateDoc,
+  deleteDoc,
   getDocs,
   getDoc,
   query,
@@ -143,4 +144,11 @@ export async function getTripLocations(tripId: string): Promise<LocationRecord[]
  */
 export async function updateTripTitle(tripId: string, title: string): Promise<void> {
   await updateDoc(doc(db, 'trips', tripId), { title });
+}
+
+/**
+ * 여행 기록을 삭제합니다
+ */
+export async function deleteTrip(tripId: string): Promise<void> {
+  await deleteDoc(doc(db, 'trips', tripId));
 }
