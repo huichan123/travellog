@@ -77,8 +77,20 @@ export default function PhotoUpload({ onClose }: PhotoUploadProps) {
 
       await addPhoto(selectedFile, memo, coordinates, exifUsed);
       onClose(); // 업로드 성공 시 모달 닫기
-    } catch {
-      setError('사진 업로드에 실패했습니다. 다시 시도해주세요.');
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? '';
+      if (code === 'storage/unauthorized') {
+        setError('Firebase Storage 권한이 없습니다. Firebase 콘솔 → Storage → Rules에서 인증된 사용자의 업로드를 허용해주세요.');
+      } else if (code === 'storage/quota-exceeded') {
+        setError('Storage 용량이 초과되었습니다.');
+      } else if (code === 'storage/canceled') {
+        setError('업로드가 취소되었습니다.');
+      } else if (code) {
+        setError(`업로드 실패 (${code})`);
+      } else {
+        setError('사진 업로드에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.');
+      }
+      console.error('사진 업로드 오류:', err);
     } finally {
       setLoading(false);
     }

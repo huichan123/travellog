@@ -58,6 +58,15 @@ export default function Navbar() {
               <Link to="/dashboard" className={`text-sm transition-colors ${isActive('/dashboard')}`}>
                 대시보드
               </Link>
+              <Link
+                to="/travel-logs/new"
+                className="text-sm px-3 py-1.5 bg-sky-500 text-white rounded-lg font-medium hover:bg-sky-600 transition-colors flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                사진 로그
+              </Link>
             </div>
           )}
 
@@ -97,6 +106,9 @@ export default function Navbar() {
                   <div className="md:hidden border-b border-gray-100 pb-1 mb-1">
                     <Link to="/map" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuOpen(false)}>
                       지도
+                    </Link>
+                    <Link to="/travel-logs/new" className="block px-4 py-2 text-sm text-sky-600 font-medium hover:bg-sky-50" onClick={() => setMenuOpen(false)}>
+                      📷 사진 로그 만들기
                     </Link>
                     <Link to="/trips" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuOpen(false)}>
                       여행 기록

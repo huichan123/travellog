@@ -71,8 +71,8 @@ export default function DashboardPage() {
         )}
 
         {/* 빠른 시작 카드들 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          {/* 새 여행 시작 */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {/* 새 여행 시작 (GPS 실시간) */}
           <Link
             to="/map"
             className="bg-sky-500 text-white rounded-2xl p-6 hover:bg-sky-600 transition-colors group"
@@ -80,17 +80,37 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-bold mb-1">
-                  {isTracking ? '여행 계속하기' : '새 여행 시작'}
+                  {isTracking ? '여행 계속하기' : '실시간 기록'}
                 </h2>
                 <p className="text-sky-100 text-sm">
                   {isTracking
                     ? '현재 기록 중인 여행으로 이동'
-                    : 'GPS로 경로를 기록하고 사진을 추가하세요'
+                    : 'GPS로 경로를 실시간 기록'
                   }
                 </p>
               </div>
               <svg className="w-8 h-8 text-sky-200 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </Link>
+
+          {/* 사진 여행 로그 만들기 */}
+          <Link
+            to="/travel-logs/new"
+            className="bg-indigo-500 text-white rounded-2xl p-6 hover:bg-indigo-600 transition-colors group"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-bold mb-1">사진 로그 만들기</h2>
+                <p className="text-indigo-100 text-sm">
+                  사진 업로드 → EXIF로 경로 자동 생성
+                </p>
+              </div>
+              <svg className="w-8 h-8 text-indigo-200 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
           </Link>
