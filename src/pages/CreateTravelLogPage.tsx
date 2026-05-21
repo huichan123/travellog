@@ -17,7 +17,6 @@ import {
   sortPhotosByTime,
   filterPhotosByRange,
   buildRouteFromPhotos,
-  filterOutlierPoints,
 } from '../utils/routeUtils';
 import {
   saveTravelLog,
@@ -50,7 +49,7 @@ export default function CreateTravelLogPage() {
     ? filterPhotosByRange(photos, startPhotoId, endPhotoId)
     : photos;
 
-  const routePoints = filterOutlierPoints(buildRouteFromPhotos(rangePhotos));
+  const routePoints = buildRouteFromPhotos(rangePhotos);
   const locationCount = rangePhotos.filter(p => p.hasLocation).length;
 
   // ─── 사진 업로드 처리 ──────────────────────────────────────────────────────
