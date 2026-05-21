@@ -1,0 +1,106 @@
+/* TravelLog 전역 CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── 기본 스타일 ─────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply font-sans text-gray-800 bg-white;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 스크롤바 스타일 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-sky-300 rounded-full;
+  }
+}
+
+/* ─── 컴포넌트 스타일 ─────────────────────────── */
+@layer components {
+  /* 기본 버튼 */
+  .btn-primary {
+    @apply px-4 py-2 bg-sky-500 text-white rounded-lg font-medium
+           hover:bg-sky-600 active:bg-sky-700
+           transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-white text-sky-600 border border-sky-300 rounded-lg font-medium
+           hover:bg-sky-50 active:bg-sky-100
+           transition-colors duration-200;
+  }
+
+  .btn-danger {
+    @apply px-4 py-2 bg-red-500 text-white rounded-lg font-medium
+           hover:bg-red-600 active:bg-red-700
+           transition-colors duration-200;
+  }
+
+  /* 입력 필드 */
+  .input-field {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg
+           focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent
+           placeholder-gray-400 transition-all duration-200;
+  }
+
+  /* 카드 */
+  .card {
+    @apply bg-white rounded-xl shadow-md overflow-hidden;
+  }
+
+  /* 지도 컨테이너 */
+  .map-container {
+    @apply w-full h-full rounded-xl overflow-hidden;
+  }
+}
+
+/* ─── 지도 인포윈도우 커스텀 스타일 ──────────── */
+.gm-style .gm-style-iw-c {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+}
+
+.gm-style .gm-style-iw-d {
+  overflow: hidden !important;
+}
+
+/* 지도 마커 사진 썸네일 */
+.photo-marker {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.photo-marker:hover {
+  transform: scale(1.15);
+}
+
+/* 현재 위치 마커 펄스 애니메이션 */
+.location-pulse {
+  animation: locationPulse 2s infinite;
+}
+
+@keyframes locationPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
