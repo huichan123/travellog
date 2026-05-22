@@ -33,10 +33,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* 로고 */}
           <Link to="/dashboard" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center group-hover:bg-sky-600 transition-colors">
-              <span className="text-white text-sm font-bold">ST</span>
-            </div>
-            <span className="text-lg font-bold text-navy-800">SketchTrip</span>
+            <img src="/sketchtrip-logo.png" alt="SketchTrip" className="h-8 w-auto" />
             {/* 여행 중일 때 표시되는 빨간 점 */}
             {isTracking && (
               <span className="flex items-center gap-1 text-xs text-red-500 font-medium">

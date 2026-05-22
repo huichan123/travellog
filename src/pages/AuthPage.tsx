@@ -53,10 +53,7 @@ export default function AuthPage() {
           {/* 모바일 로고 */}
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2">
-              <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-bold">ST</span>
-              </div>
-              <span className="text-lg font-bold text-gray-800">SketchTrip</span>
+              <img src="/sketchtrip-logo.png" alt="SketchTrip" className="h-8 w-auto" />
             </Link>
           </div>
 

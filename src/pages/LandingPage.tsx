@@ -12,10 +12,7 @@ export default function LandingPage() {
       {/* 헤더 */}
       <header className="px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">ST</span>
-          </div>
-          <span className="text-lg font-bold text-gray-800">SketchTrip</span>
+          <img src="/sketchtrip-logo.png" alt="SketchTrip" className="h-8 w-auto" />
         </div>
         <Link to="/auth" className="btn-primary text-sm">
           시작하기
