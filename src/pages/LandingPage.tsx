@@ -13,9 +13,9 @@ export default function LandingPage() {
       <header className="px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">TL</span>
+            <span className="text-white text-sm font-bold">ST</span>
           </div>
-          <span className="text-lg font-bold text-gray-800">TravelLog</span>
+          <span className="text-lg font-bold text-gray-800">SketchTrip</span>
         </div>
         <Link to="/auth" className="btn-primary text-sm">
           시작하기
@@ -125,7 +125,7 @@ export default function LandingPage() {
 
       {/* 푸터 */}
       <footer className="text-center py-8 text-gray-400 text-sm">
-        © 2024 TravelLog. All rights reserved.
+        © 2024 SketchTrip. All rights reserved.
       </footer>
     </div>
   );

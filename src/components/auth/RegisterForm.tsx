@@ -62,7 +62,7 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-gray-800 mb-2">회원가입</h2>
-      <p className="text-gray-500 text-sm mb-6">TravelLog에 오신 것을 환영합니다</p>
+      <p className="text-gray-500 text-sm mb-6">SketchTrip에 오신 것을 환영합니다</p>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">

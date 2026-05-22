@@ -34,9 +34,9 @@ export default function Navbar() {
           {/* 로고 */}
           <Link to="/dashboard" className="flex items-center gap-2 group">
             <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center group-hover:bg-sky-600 transition-colors">
-              <span className="text-white text-sm font-bold">TL</span>
+              <span className="text-white text-sm font-bold">ST</span>
             </div>
-            <span className="text-lg font-bold text-navy-800">TravelLog</span>
+            <span className="text-lg font-bold text-navy-800">SketchTrip</span>
             {/* 여행 중일 때 표시되는 빨간 점 */}
             {isTracking && (
               <span className="flex items-center gap-1 text-xs text-red-500 font-medium">

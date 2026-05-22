@@ -29,9 +29,9 @@ export default function AuthPage() {
 
         <div className="relative text-white text-center z-10">
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl font-bold">TL</span>
+            <span className="text-3xl font-bold">ST</span>
           </div>
-          <h1 className="text-4xl font-bold mb-4">TravelLog</h1>
+          <h1 className="text-4xl font-bold mb-4">SketchTrip</h1>
           <p className="text-xl text-sky-100 mb-8">Your journey, mapped with memories.</p>
           <div className="space-y-3 text-sm text-sky-100">
             <div className="flex items-center gap-2 justify-center">
@@ -54,9 +54,9 @@ export default function AuthPage() {
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2">
               <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-bold">TL</span>
+                <span className="text-white text-sm font-bold">ST</span>
               </div>
-              <span className="text-lg font-bold text-gray-800">TravelLog</span>
+              <span className="text-lg font-bold text-gray-800">SketchTrip</span>
             </Link>
           </div>
 
