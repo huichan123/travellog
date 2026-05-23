@@ -19,7 +19,7 @@ export default function TravelLogDetailPage() {
   const { currentUser } = useAuth();
 
   const [log, setLog] = useState<TravelLog | null>(null);
-  const [otherRoutes, setOtherRoutes] = useState<{ route: RoutePoint[]; color: string }[]>([]);
+  const [otherLogs, setOtherLogs] = useState<{ route: RoutePoint[]; color: string; photos: TravelPhoto[] }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lightboxPhoto, setLightboxPhoto] = useState<TravelPhoto | null>(null);
@@ -55,11 +55,14 @@ export default function TravelLogDetailPage() {
         if (!data) { setError('여행 로그를 찾을 수 없습니다.'); return; }
         setLog(data);
         if (data.routeColor) setRouteColor(data.routeColor);
-        setOtherRoutes(
+        setOtherLogs(
           allLogs
             .filter(l => l.id !== logId)
-            .map(l => ({ route: buildRouteFromPhotos(l.photos), color: l.routeColor ?? '#94a3b8' }))
-            .filter(r => r.route.length >= 2)
+            .map(l => ({
+              route: buildRouteFromPhotos(l.photos),
+              color: l.routeColor ?? '#94a3b8',
+              photos: l.photos,
+            }))
         );
       } catch {
         setError('여행 로그를 불러오는 중 오류가 발생했습니다.');
@@ -203,7 +206,7 @@ export default function TravelLogDetailPage() {
             height="400px"
             strokeColor={routeColor}
             onPhotoDetail={handleOpenDetail}
-            otherRoutes={otherRoutes}
+            otherLogs={otherLogs}
           />
         </div>
 

@@ -3,13 +3,19 @@ import { Loader } from '@googlemaps/js-api-loader';
 import { TravelPhoto, RoutePoint } from '../../types';
 import { formatDateTime } from '../../utils/formatters';
 
+interface OtherLogEntry {
+  route: RoutePoint[];
+  color: string;
+  photos: TravelPhoto[];
+}
+
 interface TravelLogMapProps {
   photos: TravelPhoto[];
   route: RoutePoint[];
   height?: string;
   strokeColor?: string;
   onPhotoDetail?: (photo: TravelPhoto) => void;
-  otherRoutes?: { route: RoutePoint[]; color: string }[];
+  otherLogs?: OtherLogEntry[];
 }
 
 interface HasSetMap {
@@ -18,11 +24,33 @@ interface HasSetMap {
 
 let googleMapsLoader: Loader | null = null;
 
-export default function TravelLogMap({ photos, route, height = '100%', strokeColor = '#0ea5e9', onPhotoDetail, otherRoutes }: TravelLogMapProps) {
+async function fetchOSRMRoute(points: RoutePoint[]): Promise<{ lat: number; lng: number }[] | null> {
+  if (points.length < 2) return null;
+  const max = 25;
+  let wps = points;
+  if (points.length > max) {
+    const step = (points.length - 1) / (max - 1);
+    wps = Array.from({ length: max }, (_, i) => points[Math.round(i * step)]);
+  }
+  const coords = wps.map(p => `${p.lng},${p.lat}`).join(';');
+  try {
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`
+    );
+    const data = await res.json();
+    if (data.code !== 'Ok' || !data.routes?.[0]) return null;
+    return (data.routes[0].geometry.coordinates as [number, number][]).map(([lng, lat]) => ({ lat, lng }));
+  } catch {
+    return null;
+  }
+}
+
+export default function TravelLogMap({ photos, route, height = '100%', strokeColor = '#0ea5e9', onPhotoDetail, otherLogs }: TravelLogMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const routeSegmentsRef = useRef<HasSetMap[]>([]);
   const otherRouteLinesRef = useRef<google.maps.Polyline[]>([]);
+  const otherMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const markerElementsRef = useRef<Map<string, HTMLElement>>(new Map());
@@ -171,7 +199,7 @@ export default function TravelLogMap({ photos, route, height = '100%', strokeCol
     });
   }, [route, mapLoaded, strokeColor]);
 
-  // ─── 다른 여행 로그 경로 ────────────────────────────────────────────────────
+  // ─── 다른 여행 로그 경로 (OSRM 도로 경로) ──────────────────────────────────
 
   useEffect(() => {
     if (!mapLoaded || !mapInstanceRef.current) return;
@@ -179,21 +207,91 @@ export default function TravelLogMap({ photos, route, height = '100%', strokeCol
     otherRouteLinesRef.current.forEach(l => l.setMap(null));
     otherRouteLinesRef.current = [];
 
-    if (!otherRoutes) return;
+    if (!otherLogs || otherLogs.length === 0) return;
 
-    otherRoutes.forEach(({ route: r, color }) => {
+    let cancelled = false;
+
+    otherLogs.forEach(async ({ route: r, color }) => {
       if (r.length < 2) return;
-      const line = new google.maps.Polyline({
+
+      // Phase 1: fallback straight line while OSRM loads
+      const fallback = new google.maps.Polyline({
         path: r.map(pt => ({ lat: pt.lat, lng: pt.lng })),
+        geodesic: true,
+        strokeColor: color,
+        strokeWeight: 3,
+        strokeOpacity: 0.3,
+        map: mapInstanceRef.current!,
+      });
+      otherRouteLinesRef.current.push(fallback);
+
+      // Phase 2: replace with road route
+      const roadCoords = await fetchOSRMRoute(r);
+      if (cancelled || !mapInstanceRef.current || !roadCoords) return;
+
+      fallback.setMap(null);
+      const idx = otherRouteLinesRef.current.indexOf(fallback);
+      if (idx !== -1) otherRouteLinesRef.current.splice(idx, 1);
+
+      const road = new google.maps.Polyline({
+        path: roadCoords,
         geodesic: true,
         strokeColor: color,
         strokeWeight: 3,
         strokeOpacity: 0.65,
         map: mapInstanceRef.current!,
       });
-      otherRouteLinesRef.current.push(line);
+      otherRouteLinesRef.current.push(road);
     });
-  }, [otherRoutes, mapLoaded]);
+
+    return () => { cancelled = true; };
+  }, [otherLogs, mapLoaded]);
+
+  // ─── 다른 여행 로그 사진 마커 ────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current) return;
+
+    otherMarkersRef.current.forEach(m => { m.map = null; });
+    otherMarkersRef.current = [];
+
+    if (!otherLogs) return;
+
+    otherLogs.forEach(({ photos: logPhotos, color }) => {
+      logPhotos
+        .filter(p => p.hasLocation && p.latitude != null && p.longitude != null)
+        .forEach(photo => {
+          const el = document.createElement('div');
+          el.style.cssText = [
+            'width:30px',
+            'height:30px',
+            'border-radius:50%',
+            `border:2px solid ${color}`,
+            'box-shadow:0 1px 6px rgba(0,0,0,0.35)',
+            'overflow:hidden',
+            'cursor:default',
+            'background:#e5e7eb',
+            'opacity:0.85',
+            'flex-shrink:0',
+          ].join(';');
+
+          const img = document.createElement('img');
+          img.src = photo.imageUrl;
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;';
+          img.alt = photo.fileName;
+          el.appendChild(img);
+
+          const marker = new google.maps.marker.AdvancedMarkerElement({
+            position: { lat: photo.latitude!, lng: photo.longitude! },
+            map: mapInstanceRef.current!,
+            content: el,
+            zIndex: 20,
+          });
+
+          otherMarkersRef.current.push(marker);
+        });
+    });
+  }, [otherLogs, mapLoaded]);
 
   // ─── 사진 마커 (AdvancedMarkerElement) ─────────────────────────────────────
 
@@ -294,7 +392,7 @@ export default function TravelLogMap({ photos, route, height = '100%', strokeCol
     if (!mapLoaded || !mapInstanceRef.current) return;
 
     const allPoints: { lat: number; lng: number }[] = locationPhotos.map(p => ({ lat: p.latitude!, lng: p.longitude! }));
-    otherRoutes?.forEach(({ route: r }) => r.forEach(pt => allPoints.push({ lat: pt.lat, lng: pt.lng })));
+    otherLogs?.forEach(({ photos: lp }) => lp.filter(p => p.hasLocation && p.latitude != null && p.longitude != null).forEach(p => allPoints.push({ lat: p.latitude!, lng: p.longitude! })));
 
     if (allPoints.length === 0) return;
 
@@ -307,11 +405,11 @@ export default function TravelLogMap({ photos, route, height = '100%', strokeCol
     const bounds = new google.maps.LatLngBounds();
     allPoints.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }));
     mapInstanceRef.current.fitBounds(bounds, 60);
-  }, [locationPhotos, otherRoutes, mapLoaded]);
+  }, [locationPhotos, otherLogs, mapLoaded]);
 
   // ─── GPS 없는 경우 ─────────────────────────────────────────────────────────
 
-  if (!mapError && locationPhotos.length === 0 && (!otherRoutes || otherRoutes.length === 0)) {
+  if (!mapError && locationPhotos.length === 0 && (!otherLogs || !otherLogs.some(l => l.photos.some(p => p.hasLocation)))) {
     return (
       <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200" style={{ height }}>
         <div className="text-4xl mb-2">📍</div>
