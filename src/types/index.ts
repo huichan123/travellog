@@ -102,6 +102,8 @@ export interface TravelPhoto {
   latitude: number | null;    // GPS 위도 (없으면 null)
   longitude: number | null;   // GPS 경도 (없으면 null)
   hasLocation: boolean;
+  name?: string;              // 사용자 지정 이름
+  comment?: string;           // 사용자 코멘트
 }
 
 // 경로를 구성하는 각 점
@@ -125,4 +127,5 @@ export interface TravelLog {
   coverImageUrl?: string;
   photoCount: number;
   locationCount: number;
+  routeColor?: string;
 }

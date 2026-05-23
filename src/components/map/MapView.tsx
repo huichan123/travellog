@@ -71,6 +71,7 @@ export default function MapView({
           mapTypeControl: false,        // 지도 유형 버튼 숨기기
           streetViewControl: false,     // 스트리트뷰 버튼 숨기기
           fullscreenControl: true,
+          gestureHandling: 'greedy',
           zoomControlOptions: {
             position: google.maps.ControlPosition.RIGHT_CENTER,
           },
