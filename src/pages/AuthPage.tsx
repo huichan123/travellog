@@ -53,7 +53,7 @@ export default function AuthPage() {
           {/* 모바일 로고 */}
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2">
-              <img src="/sketchtrip-logo.png" alt="SketchTrip" className="h-8 w-auto" />
+              <img src={`${import.meta.env.BASE_URL}sketchtrip-logo.png`} alt="SketchTrip" className="h-8 w-auto" />
             </Link>
           </div>
 
