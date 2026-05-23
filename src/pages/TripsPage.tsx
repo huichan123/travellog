@@ -5,6 +5,7 @@ import { getUserTrips, deleteTrip, updateTripTitle } from '../services/tripServi
 import { getUserTravelLogs, deleteTravelLog, updateTravelLogTitle } from '../services/travelLogService';
 import { Trip, TravelLog } from '../types';
 import TripCard from '../components/trips/TripCard';
+import TravelFeed from '../components/travellog/TravelFeed';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { formatDate } from '../utils/formatters';
 
@@ -15,7 +16,10 @@ export default function TripsPage() {
   const [travelLogs, setTravelLogs] = useState<TravelLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'realtime' | 'photo'>('realtime');
+  const [activeTab, setActiveTab] = useState<'realtime' | 'photo'>('photo');
+
+  // 피드 필터
+  const [activeFeedLogId, setActiveFeedLogId] = useState<string | null>(null);
 
   // 편집 모드
   const [editMode, setEditMode] = useState(false);
@@ -49,20 +53,18 @@ export default function TripsPage() {
     fetchData();
   }, [currentUser]);
 
-  // 탭 변경 시 선택 초기화
   const handleTabChange = (tab: 'realtime' | 'photo') => {
     setActiveTab(tab);
     setSelectedIds(new Set());
     setEditMode(false);
+    setActiveFeedLogId(null);
   };
 
-  // 편집 모드 종료 시 선택 초기화
   const exitEditMode = () => {
     setEditMode(false);
     setSelectedIds(new Set());
   };
 
-  // 체크박스 토글
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -72,7 +74,6 @@ export default function TripsPage() {
     });
   };
 
-  // 전체 선택/해제
   const toggleSelectAll = () => {
     const currentList = activeTab === 'realtime' ? trips : travelLogs;
     const allIds = new Set(currentList.map(item => item.id!));
@@ -83,7 +84,6 @@ export default function TripsPage() {
     }
   };
 
-  // 삭제 실행
   const handleDelete = async () => {
     if (!currentUser || selectedIds.size === 0) return;
     setDeleteLoading(true);
@@ -97,6 +97,9 @@ export default function TripsPage() {
           logsToDelete.map(l => deleteTravelLog(currentUser.uid, l.id!, l.photos))
         );
         setTravelLogs(prev => prev.filter(l => !selectedIds.has(l.id!)));
+        if (activeFeedLogId && selectedIds.has(activeFeedLogId)) {
+          setActiveFeedLogId(null);
+        }
       }
       setShowDeleteConfirm(false);
       exitEditMode();
@@ -107,7 +110,6 @@ export default function TripsPage() {
     }
   };
 
-  // 이름 변경 모달 열기 (선택된 1개)
   const openRename = () => {
     const [id] = [...selectedIds];
     if (activeTab === 'realtime') {
@@ -119,7 +121,6 @@ export default function TripsPage() {
     }
   };
 
-  // 이름 변경 저장
   const handleRename = async () => {
     if (!renameTarget || !renameValue.trim()) return;
     setRenameLoading(true);
@@ -146,19 +147,16 @@ export default function TripsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
 
-        {/* 헤더 */}
+        {/* 페이지 헤더 */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-800">여행 기록</h1>
           <div className="flex gap-2">
             {!editMode ? (
               <>
                 {!isEmpty && (
-                  <button
-                    onClick={() => setEditMode(true)}
-                    className="btn-secondary text-sm"
-                  >
+                  <button onClick={() => setEditMode(true)} className="btn-secondary text-sm">
                     편집
                   </button>
                 )}
@@ -167,7 +165,10 @@ export default function TripsPage() {
                     새 여행 시작
                   </button>
                 ) : (
-                  <button onClick={() => navigate('/travel-logs/new')} className="btn-primary text-sm flex items-center gap-1.5">
+                  <button
+                    onClick={() => navigate('/travel-logs/new')}
+                    className="btn-primary text-sm flex items-center gap-1.5"
+                  >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -177,15 +178,13 @@ export default function TripsPage() {
                 )}
               </>
             ) : (
-              <button onClick={exitEditMode} className="btn-secondary text-sm">
-                취소
-              </button>
+              <button onClick={exitEditMode} className="btn-secondary text-sm">취소</button>
             )}
           </div>
         </div>
 
         {/* 탭 */}
-        <div className="flex bg-white rounded-xl shadow-sm p-1 mb-5 border border-gray-100">
+        <div className="flex bg-white rounded-xl shadow-sm p-1 mb-5 border border-gray-100 max-w-md">
           <button
             onClick={() => handleTabChange('photo')}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
@@ -213,27 +212,6 @@ export default function TripsPage() {
             )}
           </button>
         </div>
-
-        {/* 편집 모드 전체선택 바 */}
-        {editMode && !isEmpty && (
-          <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-4 shadow-sm border border-gray-100">
-            <button
-              onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-sm font-medium text-gray-700"
-            >
-              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                allSelected ? 'bg-sky-500 border-sky-500' : 'border-gray-300'
-              }`}>
-                {allSelected && (
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
-              전체 선택 ({selectedIds.size}/{currentList.length})
-            </button>
-          </div>
-        )}
 
         {/* 로딩 */}
         {loading && (
@@ -268,106 +246,209 @@ export default function TripsPage() {
           </div>
         )}
 
-        {/* 사진 여행 로그 그리드 */}
+        {/* ── 사진 여행 로그 탭: 2열 레이아웃 ── */}
         {!loading && activeTab === 'photo' && travelLogs.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {travelLogs.map(log => (
-              <div key={log.id} className="relative group">
-                {/* 체크박스 */}
-                {editMode && (
-                  <button
-                    onClick={() => toggleSelect(log.id!)}
-                    className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shadow-sm"
-                    style={{
-                      backgroundColor: selectedIds.has(log.id!) ? '#0ea5e9' : 'white',
-                      borderColor: selectedIds.has(log.id!) ? '#0ea5e9' : '#d1d5db',
-                    }}
-                  >
-                    {selectedIds.has(log.id!) && (
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </button>
-                )}
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6 lg:items-start">
 
-                <div
-                  className={`bg-white rounded-2xl shadow-sm overflow-hidden border transition-all ${
-                    editMode
-                      ? selectedIds.has(log.id!)
-                        ? 'border-sky-400 ring-2 ring-sky-200'
-                        : 'border-gray-100 opacity-70'
-                      : 'border-gray-100 cursor-pointer hover:shadow-md'
-                  }`}
-                  onClick={() => {
-                    if (editMode) toggleSelect(log.id!);
-                    else navigate(`/travel-logs/${log.id}`);
-                  }}
-                >
-                  <div className="aspect-video bg-gray-100 overflow-hidden">
-                    {log.coverImageUrl ? (
-                      <img src={log.coverImageUrl} alt={log.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl">📷</div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-800 truncate">{log.title}</h3>
-                    <p className="text-xs text-gray-400 mt-1">{formatDate(log.createdAt)}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                      <span>📷 {log.photoCount}장</span>
-                      <span>·</span>
-                      <span className="text-emerald-600">📍 {log.locationCount}장 GPS</span>
+            {/* 왼쪽: 앨범 카드 목록 */}
+            <div>
+              {/* 편집 모드 전체 선택 바 */}
+              {editMode && (
+                <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-4 shadow-sm border border-gray-100">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 text-sm font-medium text-gray-700"
+                  >
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      allSelected ? 'bg-sky-500 border-sky-500' : 'border-gray-300'
+                    }`}>
+                      {allSelected && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
                     </div>
-                  </div>
+                    전체 선택 ({selectedIds.size}/{travelLogs.length})
+                  </button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {travelLogs.map(log => {
+                  const isActiveFeed = activeFeedLogId === log.id;
+                  return (
+                    <div key={log.id} className="relative group">
+                      {/* 편집 체크박스 */}
+                      {editMode && (
+                        <button
+                          onClick={() => toggleSelect(log.id!)}
+                          className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shadow-sm"
+                          style={{
+                            backgroundColor: selectedIds.has(log.id!) ? '#0ea5e9' : 'white',
+                            borderColor: selectedIds.has(log.id!) ? '#0ea5e9' : '#d1d5db',
+                          }}
+                        >
+                          {selectedIds.has(log.id!) && (
+                            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
+
+                      <div
+                        className={`bg-white rounded-2xl shadow-sm overflow-hidden border transition-all ${
+                          editMode
+                            ? selectedIds.has(log.id!)
+                              ? 'border-sky-400 ring-2 ring-sky-200'
+                              : 'border-gray-100 opacity-70'
+                            : isActiveFeed
+                              ? 'border-sky-400 ring-2 ring-sky-100 cursor-pointer'
+                              : 'border-gray-100 cursor-pointer hover:shadow-md'
+                        }`}
+                        onClick={() => {
+                          if (editMode) {
+                            toggleSelect(log.id!);
+                          } else {
+                            // 피드 필터 토글
+                            setActiveFeedLogId(prev => prev === log.id ? null : log.id!);
+                          }
+                        }}
+                      >
+                        {/* 커버 이미지 */}
+                        <div className="aspect-video bg-gray-100 overflow-hidden relative">
+                          {log.coverImageUrl ? (
+                            <img src={log.coverImageUrl} alt={log.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-4xl">📷</div>
+                          )}
+                          {/* 선택된 필터 표시 */}
+                          {isActiveFeed && !editMode && (
+                            <div className="absolute inset-0 bg-sky-500/10 flex items-center justify-center">
+                              <span className="bg-sky-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
+                                피드 필터 중
+                              </span>
+                            </div>
+                          )}
+                          {/* 경로 색상 점 */}
+                          {log.routeColor && (
+                            <div
+                              className="absolute top-2 right-2 w-3 h-3 rounded-full ring-2 ring-white shadow"
+                              style={{ backgroundColor: log.routeColor }}
+                            />
+                          )}
+                        </div>
+
+                        {/* 카드 정보 */}
+                        <div className="p-3.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-semibold text-gray-800 truncate flex-1 text-sm">{log.title}</h3>
+                            {/* 상세 보기 버튼 */}
+                            <button
+                              onClick={e => { e.stopPropagation(); navigate(`/travel-logs/${log.id}`); }}
+                              className="flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-sky-500"
+                              title="상세 보기"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">{formatDate(log.createdAt)}</p>
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
+                            <span>📷 {log.photoCount}장</span>
+                            <span>·</span>
+                            <span className="text-emerald-600">📍 {log.locationCount}장</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 모바일에서만 보이는 피드 구분선 */}
+              <div className="lg:hidden mt-10 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs font-semibold text-gray-400 px-2">여행 피드</span>
+                  <div className="flex-1 h-px bg-gray-200" />
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* 오른쪽: 피드 패널 (데스크톱 sticky + 독립 스크롤) */}
+            <aside className="lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-88px)] lg:overflow-y-auto lg:overscroll-contain">
+              <TravelFeed
+                logs={travelLogs}
+                activeLogId={activeFeedLogId}
+                onFilterChange={setActiveFeedLogId}
+              />
+            </aside>
           </div>
         )}
 
-        {/* 실시간 여행 카드 그리드 */}
+        {/* ── 실시간 기록 탭 ── */}
         {!loading && activeTab === 'realtime' && trips.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {trips.map(trip => (
-              <div key={trip.id} className="relative group">
-                {/* 체크박스 */}
-                {editMode && (
-                  <button
-                    onClick={() => toggleSelect(trip.id!)}
-                    className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shadow-sm"
-                    style={{
-                      backgroundColor: selectedIds.has(trip.id!) ? '#0ea5e9' : 'white',
-                      borderColor: selectedIds.has(trip.id!) ? '#0ea5e9' : '#d1d5db',
-                    }}
-                  >
-                    {selectedIds.has(trip.id!) && (
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <>
+            {editMode && (
+              <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-4 shadow-sm border border-gray-100">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-700"
+                >
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                    allSelected ? 'bg-sky-500 border-sky-500' : 'border-gray-300'
+                  }`}>
+                    {allSelected && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
-                  </button>
-                )}
-
-                <div className={editMode ? selectedIds.has(trip.id!) ? 'ring-2 ring-sky-200 rounded-2xl' : 'opacity-70' : ''}>
-                  <TripCard
-                    trip={trip}
-                    onClick={() => {
-                      if (editMode) toggleSelect(trip.id!);
-                      else navigate(`/trips/${trip.id}`);
-                    }}
-                  />
-                </div>
+                  </div>
+                  전체 선택 ({selectedIds.size}/{trips.length})
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {trips.map(trip => (
+                <div key={trip.id} className="relative">
+                  {editMode && (
+                    <button
+                      onClick={() => toggleSelect(trip.id!)}
+                      className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shadow-sm"
+                      style={{
+                        backgroundColor: selectedIds.has(trip.id!) ? '#0ea5e9' : 'white',
+                        borderColor: selectedIds.has(trip.id!) ? '#0ea5e9' : '#d1d5db',
+                      }}
+                    >
+                      {selectedIds.has(trip.id!) && (
+                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                  <div className={editMode && selectedIds.has(trip.id!) ? 'ring-2 ring-sky-200 rounded-2xl' : editMode ? 'opacity-70' : ''}>
+                    <TripCard
+                      trip={trip}
+                      onClick={() => {
+                        if (editMode) toggleSelect(trip.id!);
+                        else navigate(`/trips/${trip.id}`);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       {/* 편집 모드 하단 액션 바 */}
       {editMode && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
             <span className="text-sm text-gray-500 flex-1">
               {selectedIds.size > 0 ? `${selectedIds.size}개 선택됨` : '항목을 선택하세요'}
             </span>
@@ -398,11 +479,7 @@ export default function TripsPage() {
               선택한 {selectedIds.size}개의 여행 기록이 영구적으로 삭제됩니다.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleteLoading}
-                className="btn-secondary flex-1"
-              >
+              <button onClick={() => setShowDeleteConfirm(false)} disabled={deleteLoading} className="btn-secondary flex-1">
                 취소
               </button>
               <button
@@ -433,18 +510,10 @@ export default function TripsPage() {
               autoFocus
             />
             <div className="flex gap-3">
-              <button
-                onClick={() => setRenameTarget(null)}
-                disabled={renameLoading}
-                className="btn-secondary flex-1"
-              >
+              <button onClick={() => setRenameTarget(null)} disabled={renameLoading} className="btn-secondary flex-1">
                 취소
               </button>
-              <button
-                onClick={handleRename}
-                disabled={!renameValue.trim() || renameLoading}
-                className="btn-primary flex-1"
-              >
+              <button onClick={handleRename} disabled={!renameValue.trim() || renameLoading} className="btn-primary flex-1">
                 {renameLoading ? '저장 중...' : '저장'}
               </button>
             </div>
