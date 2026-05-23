@@ -7,6 +7,9 @@ interface TravelLogMapProps {
   photos: TravelPhoto[];
   route: RoutePoint[];
   height?: string;
+  strokeColor?: string;
+  onPhotoDetail?: (photo: TravelPhoto) => void;
+  otherRoutes?: { route: RoutePoint[]; color: string }[];
 }
 
 interface HasSetMap {
@@ -15,18 +18,24 @@ interface HasSetMap {
 
 let googleMapsLoader: Loader | null = null;
 
-export default function TravelLogMap({ photos, route, height = '100%' }: TravelLogMapProps) {
+export default function TravelLogMap({ photos, route, height = '100%', strokeColor = '#0ea5e9', onPhotoDetail, otherRoutes }: TravelLogMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const routeSegmentsRef = useRef<HasSetMap[]>([]);
+  const otherRouteLinesRef = useRef<google.maps.Polyline[]>([]);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const markerElementsRef = useRef<Map<string, HTMLElement>>(new Map());
+  const activePhotoIdRef = useRef<string | null>(null);
+  const onPhotoDetailRef = useRef(onPhotoDetail);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState('');
   const [routeLoading, setRouteLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const locationPhotos = photos.filter(p => p.hasLocation);
+
+  useEffect(() => { onPhotoDetailRef.current = onPhotoDetail; }, [onPhotoDetail]);
 
   // ESC 키로 전체화면 종료
   useEffect(() => {
@@ -72,6 +81,7 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          gestureHandling: 'greedy',
           zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
           styles: [
             { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
@@ -106,13 +116,13 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
 
     setRouteLoading(true);
 
-    // ① 항상 연결되는 회색 기본선 (도로 경로 실패 시 대비)
+    // ① 항상 연결되는 기본선 (도로 경로 실패 시 대비)
     const baseline = new google.maps.Polyline({
       path: route.map(r => ({ lat: r.lat, lng: r.lng })),
       geodesic: true,
-      strokeColor: '#94a3b8',
+      strokeColor,
       strokeWeight: 2,
-      strokeOpacity: 0.5,
+      strokeOpacity: 0.4,
       map: mapInstanceRef.current,
     });
     routeSegmentsRef.current.push(baseline);
@@ -150,7 +160,7 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
               map: mapInstanceRef.current!,
               directions: result,
               suppressMarkers: true,
-              polylineOptions: { strokeColor: '#0ea5e9', strokeWeight: 4, strokeOpacity: 0.9 },
+              polylineOptions: { strokeColor, strokeWeight: 4, strokeOpacity: 0.9 },
             });
             routeSegmentsRef.current.push(renderer);
           }
@@ -159,7 +169,31 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
         }
       );
     });
-  }, [route, mapLoaded]);
+  }, [route, mapLoaded, strokeColor]);
+
+  // ─── 다른 여행 로그 경로 ────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current) return;
+
+    otherRouteLinesRef.current.forEach(l => l.setMap(null));
+    otherRouteLinesRef.current = [];
+
+    if (!otherRoutes) return;
+
+    otherRoutes.forEach(({ route: r, color }) => {
+      if (r.length < 2) return;
+      const line = new google.maps.Polyline({
+        path: r.map(pt => ({ lat: pt.lat, lng: pt.lng })),
+        geodesic: true,
+        strokeColor: color,
+        strokeWeight: 3,
+        strokeOpacity: 0.4,
+        map: mapInstanceRef.current!,
+      });
+      otherRouteLinesRef.current.push(line);
+    });
+  }, [otherRoutes, mapLoaded]);
 
   // ─── 사진 마커 (AdvancedMarkerElement) ─────────────────────────────────────
 
@@ -168,6 +202,9 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
 
     markersRef.current.forEach(m => { m.map = null; });
     markersRef.current = [];
+    markerElementsRef.current.clear();
+    activePhotoIdRef.current = null;
+    infoWindowRef.current.close();
 
     locationPhotos.forEach((photo, idx) => {
       const isFirst = idx === 0;
@@ -186,6 +223,7 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
         'cursor:pointer',
         'background:#e5e7eb',
         'flex-shrink:0',
+        'transition:transform 0.15s',
       ].join(';');
 
       const img = document.createElement('img');
@@ -193,6 +231,8 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
       img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;';
       img.alt = photo.fileName;
       el.appendChild(img);
+
+      markerElementsRef.current.set(photo.id, el);
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
         position: { lat: photo.latitude!, lng: photo.longitude! },
@@ -202,19 +242,44 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
       });
 
       el.addEventListener('click', () => {
-        infoWindowRef.current!.setContent(`
-          <div style="padding:8px;max-width:200px;">
-            <img src="${photo.imageUrl}" alt="${photo.fileName}"
-              style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:6px;" />
-            <p style="font-size:12px;color:#374151;font-weight:500;margin:0 0 2px;">
-              ${photo.takenAt ? formatDateTime(photo.takenAt) : '촬영 시간 없음'}
-            </p>
-            <p style="font-size:11px;color:#9ca3af;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-              ${photo.fileName}
-            </p>
-          </div>
-        `);
-        infoWindowRef.current!.open({ map: mapInstanceRef.current!, anchor: marker });
+        const isSame = activePhotoIdRef.current === photo.id;
+
+        // 이전 활성 마커 크기 초기화
+        if (activePhotoIdRef.current) {
+          const prevEl = markerElementsRef.current.get(activePhotoIdRef.current);
+          if (prevEl) prevEl.style.transform = 'scale(1)';
+        }
+
+        if (isSame) {
+          // 두 번째 클릭: 상세 패널 열기
+          activePhotoIdRef.current = null;
+          infoWindowRef.current!.close();
+          onPhotoDetailRef.current?.(photo);
+        } else {
+          // 첫 번째 클릭: 마커 확대 + InfoWindow
+          activePhotoIdRef.current = photo.id;
+          el.style.transform = 'scale(1.4)';
+
+          const displayName = photo.name || photo.fileName;
+          infoWindowRef.current!.setContent(`
+            <div style="padding:8px;max-width:210px;">
+              <img src="${photo.imageUrl}" alt="${displayName}"
+                style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px;" />
+              <p style="font-size:13px;color:#111827;font-weight:600;margin:0 0 2px;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                ${displayName}
+              </p>
+              <p style="font-size:11px;color:#6b7280;margin:0 0 6px;">
+                ${photo.takenAt ? formatDateTime(photo.takenAt) : '촬영 시간 없음'}
+              </p>
+              ${photo.comment ? `<p style="font-size:11px;color:#374151;margin:0 0 6px;
+                overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+                ${photo.comment}</p>` : ''}
+              <p style="font-size:10px;color:#0ea5e9;margin:0;">한 번 더 클릭 → 편집</p>
+            </div>
+          `);
+          infoWindowRef.current!.open({ map: mapInstanceRef.current!, anchor: marker });
+        }
       });
 
       markersRef.current.push(marker);
@@ -226,22 +291,27 @@ export default function TravelLogMap({ photos, route, height = '100%' }: TravelL
   // ─── bounds 자동 조절 ──────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!mapLoaded || !mapInstanceRef.current || locationPhotos.length === 0) return;
+    if (!mapLoaded || !mapInstanceRef.current) return;
 
-    if (locationPhotos.length === 1) {
-      mapInstanceRef.current.setCenter({ lat: locationPhotos[0].latitude!, lng: locationPhotos[0].longitude! });
+    const allPoints: { lat: number; lng: number }[] = locationPhotos.map(p => ({ lat: p.latitude!, lng: p.longitude! }));
+    otherRoutes?.forEach(({ route: r }) => r.forEach(pt => allPoints.push({ lat: pt.lat, lng: pt.lng })));
+
+    if (allPoints.length === 0) return;
+
+    if (allPoints.length === 1) {
+      mapInstanceRef.current.setCenter({ lat: allPoints[0].lat, lng: allPoints[0].lng });
       mapInstanceRef.current.setZoom(15);
       return;
     }
 
     const bounds = new google.maps.LatLngBounds();
-    locationPhotos.forEach(p => bounds.extend({ lat: p.latitude!, lng: p.longitude! }));
+    allPoints.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }));
     mapInstanceRef.current.fitBounds(bounds, 60);
-  }, [locationPhotos, mapLoaded]);
+  }, [locationPhotos, otherRoutes, mapLoaded]);
 
   // ─── GPS 없는 경우 ─────────────────────────────────────────────────────────
 
-  if (!mapError && locationPhotos.length === 0) {
+  if (!mapError && locationPhotos.length === 0 && (!otherRoutes || otherRoutes.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200" style={{ height }}>
         <div className="text-4xl mb-2">📍</div>
