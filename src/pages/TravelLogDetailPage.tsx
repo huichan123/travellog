@@ -26,6 +26,7 @@ export default function TravelLogDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [routeColor, setRouteColor] = useState('#0ea5e9');
+  const [colorSaved, setColorSaved] = useState(false);
   const [detailPhoto, setDetailPhoto] = useState<TravelPhoto | null>(null);
   const [editName, setEditName] = useState('');
   const [editComment, setEditComment] = useState('');
@@ -94,8 +95,11 @@ export default function TravelLogDetailPage() {
   const handleColorChange = async (color: string) => {
     if (!log) return;
     setRouteColor(color);
+    setColorSaved(false);
     try {
       await updateTravelLogRouteColor(log.id!, color);
+      setColorSaved(true);
+      setTimeout(() => setColorSaved(false), 2000);
     } catch {
       // 실패해도 UI에는 반영
     }
@@ -173,6 +177,9 @@ export default function TravelLogDetailPage() {
             <h2 className="font-semibold text-gray-800">이동 경로</h2>
             {/* 경로 색상 선택 */}
             <div className="flex items-center gap-1.5">
+              {colorSaved && (
+                <span className="text-xs text-emerald-500 font-medium">✓ 저장됨</span>
+              )}
               <span className="text-xs text-gray-400 mr-1">경로 색상</span>
               {ROUTE_COLORS.map(c => (
                 <button

@@ -188,7 +188,7 @@ export default function TravelLogMap({ photos, route, height = '100%', strokeCol
         geodesic: true,
         strokeColor: color,
         strokeWeight: 3,
-        strokeOpacity: 0.4,
+        strokeOpacity: 0.65,
         map: mapInstanceRef.current!,
       });
       otherRouteLinesRef.current.push(line);

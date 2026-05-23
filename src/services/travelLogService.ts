@@ -95,6 +95,16 @@ export async function updateTravelLogTitle(logId: string, title: string): Promis
   await updateDoc(doc(db, 'travelLogs', logId), { title });
 }
 
+export async function updateTravelLogRouteColor(logId: string, routeColor: string): Promise<void> {
+  await updateDoc(doc(db, 'travelLogs', logId), { routeColor });
+}
+
+export async function updateTravelLogPhoto(logId: string, photos: TravelPhoto[]): Promise<void> {
+  await updateDoc(doc(db, 'travelLogs', logId), {
+    photos: photos.map(serializePhoto),
+  });
+}
+
 export async function deleteTravelLog(
   userId: string,
   logId: string,
@@ -141,6 +151,7 @@ function deserializeTravelLog(id: string, data: any): TravelLog {
     coverImageUrl: data.coverImageUrl ?? undefined,
     photoCount: data.photoCount ?? 0,
     locationCount: data.locationCount ?? 0,
+    routeColor: data.routeColor ?? undefined,
     photos: (data.photos ?? []).map(deserializePhoto),
     route: (data.route ?? []).map(deserializeRoutePoint),
   };
