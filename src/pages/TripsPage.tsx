@@ -275,7 +275,6 @@ export default function TripsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {travelLogs.map(log => {
-                  const isActiveFeed = activeFeedLogId === log.id;
                   return (
                     <div key={log.id} className="relative group">
                       {/* 편집 체크박스 */}
@@ -302,16 +301,13 @@ export default function TripsPage() {
                             ? selectedIds.has(log.id!)
                               ? 'border-sky-400 ring-2 ring-sky-200'
                               : 'border-gray-100 opacity-70'
-                            : isActiveFeed
-                              ? 'border-sky-400 ring-2 ring-sky-100 cursor-pointer'
-                              : 'border-gray-100 cursor-pointer hover:shadow-md'
+                            : 'border-gray-100 cursor-pointer hover:shadow-md'
                         }`}
                         onClick={() => {
                           if (editMode) {
                             toggleSelect(log.id!);
                           } else {
-                            // 피드 필터 토글
-                            setActiveFeedLogId(prev => prev === log.id ? null : log.id!);
+                            navigate(`/travel-logs/${log.id}`);
                           }
                         }}
                       >
@@ -321,14 +317,6 @@ export default function TripsPage() {
                             <img src={log.coverImageUrl} alt={log.title} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-4xl">📷</div>
-                          )}
-                          {/* 선택된 필터 표시 */}
-                          {isActiveFeed && !editMode && (
-                            <div className="absolute inset-0 bg-sky-500/10 flex items-center justify-center">
-                              <span className="bg-sky-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
-                                피드 필터 중
-                              </span>
-                            </div>
                           )}
                           {/* 경로 색상 점 */}
                           {log.routeColor && (
@@ -341,19 +329,7 @@ export default function TripsPage() {
 
                         {/* 카드 정보 */}
                         <div className="p-3.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-semibold text-gray-800 truncate flex-1 text-sm">{log.title}</h3>
-                            {/* 상세 보기 버튼 */}
-                            <button
-                              onClick={e => { e.stopPropagation(); navigate(`/travel-logs/${log.id}`); }}
-                              className="flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-sky-500"
-                              title="상세 보기"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </button>
-                          </div>
+                          <h3 className="font-semibold text-gray-800 truncate text-sm">{log.title}</h3>
                           <p className="text-xs text-gray-400 mt-0.5">{formatDate(log.createdAt)}</p>
                           <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
                             <span>📷 {log.photoCount}장</span>
